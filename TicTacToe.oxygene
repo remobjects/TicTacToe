@@ -139,10 +139,8 @@
     <AppResource Include="Resources\App Icons\App-48.png" />
     <AppResource Include="Resources\App Icons\App-57.png" />
     <AppResource Include="Resources\App Icons\App-58.png" />
-    <AppResource Include="Resources\App Icons\App-72.png" />
     <AppResource Include="Resources\App Icons\App-96.png" />
     <AppResource Include="Resources\App Icons\App-114.png" />
-    <AppResource Include="Resources\App Icons\App-144.png" />
     <None Include="Resources\App Icons\App-512.png" />
     <None Include="Resources\App Icons\App-1024.png" />
     <AppResource Include="Resources\Launch Images\Default.png" />
@@ -150,7 +148,6 @@
     <AppResource Include="Resources\Launch Images\Default-568h@2x.png" />
   </ItemGroup>
   <ItemGroup>
-    <Xib Include="RootViewController~ipad.xib" />
     <Xib Include="RootViewController~iphone.xib" />
   </ItemGroup>
   <ItemGroup>

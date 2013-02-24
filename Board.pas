@@ -95,9 +95,6 @@ begin
     fStatusLabel.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
     addSubview(fStatusLabel);
 
-
-    fStatusLabel.text := 'hello';
-
   end;
   result := self;
 end;

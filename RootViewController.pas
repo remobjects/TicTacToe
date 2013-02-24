@@ -62,6 +62,8 @@ begin
   fBoard.delegate := self;
   view.addSubview(fBoard);
 
+  fBoard.acceptingTurn := true;
+  fBoard.setStatus('hello');
   //var lAction := new UIActionSheet withTitle( ) ( ) delegate( ) ( ) cancelButtonTitle( ) ( ) destructiveButtonTitle( ) ( ) otherButtonTitles( ) ( ) 
  
   //presentViewController(mmvc) animated(YES) completion(nil);
