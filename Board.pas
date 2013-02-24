@@ -17,7 +17,7 @@ type
     fTentativeOk: Boolean;
 
     fTurnCount: Int32;
-    fGridImages: array[0..2, 0..2] of UIImageView;
+    fGridImages: NSMutableArray := new NSMutableArray;
     fGridInfo: array[0..2, 0..2] of NSString;
 
     const 
@@ -44,6 +44,7 @@ type
     method makeComputerMove(aPlayer: String);
     method isFull: Boolean; 
     method markWinner: String; 
+    method clear(aCompletion: block := nil);
 
     method setStatus(aStatus: String);
 
@@ -144,7 +145,7 @@ begin
     f.size := lNewView.image.size;
     lNewView.frame := f;
     addSubview(lNewView);
-    fGridImages[aX, aY] := lNewView;
+    fGridImages.addObject(lNewView);
 
     UIView.animateWithDuration(0.5) 
             animations(method begin
@@ -152,7 +153,7 @@ begin
               end);
   end
   else begin
-    fGridImages[aX, aY] := aImageview;
+    fGridImages.addObject(aImageview);
 
     {UIView.animateWithDuration(0.5) 
             animations(method begin
@@ -319,6 +320,34 @@ begin
 
     end;
   end;
+end;
+
+method Board.clear(aCompletion: block := nil);
+begin
+  var lTempImages := fGridImages.copy;
+  var lTempTentativeView := fTentativeView;
+
+  UIView.animateWithDuration(0.5) 
+      animations(method begin
+          for each i in lTempImages do
+            i.alpha := 0.0;
+          if assigned(lTempTentativeView) then
+            lTempTentativeView.alpha := 0;
+        end)
+      completion(method begin
+          for each i in lTempImages do
+            i.removeFromSuperview();
+          if assigned(lTempTentativeView) then
+            lTempTentativeView.removeFromSuperview();
+          if assigned(aCompletion) then
+            aCompletion();
+        end);
+
+  fGridImages.removeAllObjects();
+  for x: Int32 := 0 to 2 do 
+    for y: Int32 := 0 to 2 do
+      fGridInfo[x,y] := nil;
+  fTurnCount := 0;
 end;
 
 end.
