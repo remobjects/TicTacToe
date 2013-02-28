@@ -29,6 +29,7 @@ type
 
     method gridIndexForPoint(aPoint: CGPoint): GridIndex;
     method drawingOffsetForGridIndex(aGridIndex: GridIndex): CGPoint;
+    method playerAtCoordinates(x: Int32; y: Int32): String;
 
     method addMarkerNotAnimated(aX: Int32; aY: Int32; aPlayerAndVersion: String);
 
@@ -290,9 +291,37 @@ begin
   result := true;
 end;
 
+method Board.playerAtCoordinates(x, y: Int32): String;
+begin
+  result := fGridInfo[x,y]:substringToIndex(1); 
+end;
+
+
 method Board.markWinner: String;
 begin
-  result := nil;
+  // won't win any nobel price for achievements in the computer sciences, but gets the job done:
+
+  // horizontals
+  for x: Int32 := 0 to 2 do begin
+    if assigned(playerAtCoordinates(x, 0)) and 
+      (playerAtCoordinates(x, 0) = playerAtCoordinates(x, 1)) and
+      (playerAtCoordinates(x, 0) = playerAtCoordinates(x, 2)) then exit playerAtCoordinates(x, 0);
+  end;
+  // verticals
+  for y: Int32 := 0 to 2 do begin
+    if assigned(playerAtCoordinates(0, y)) and 
+      (playerAtCoordinates(0, y) = playerAtCoordinates(1, y)) and
+      (playerAtCoordinates(0, y) = playerAtCoordinates(2, y)) then exit playerAtCoordinates(0, y);
+  end;
+  // diagonally
+  if assigned(playerAtCoordinates(0, 0)) and 
+    (playerAtCoordinates(0, 0) = playerAtCoordinates(1, 1)) and
+    (playerAtCoordinates(0, 0) = playerAtCoordinates(2, 2)) then exit playerAtCoordinates(0, 0);
+  if assigned(playerAtCoordinates(0, 2)) and 
+    (playerAtCoordinates(0, 2) = playerAtCoordinates(1, 1)) and
+    (playerAtCoordinates(0, 2) = playerAtCoordinates(2, 0)) then exit playerAtCoordinates(0, 2);
+
+  exit nil;
 end;
 
 method Board.setStatus(aStatus: String);

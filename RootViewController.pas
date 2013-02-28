@@ -180,9 +180,22 @@ begin
   fBoard.clear(method begin
                  fCurrentMatch := aMatch;
                  loadCurrentMatch(false);
-                 fBoard.setStatus('game over'); 
-                 // todo: show win/lose
-                end, fCurrentMatch:matchID ≠ aMatch:matchID);
+
+                 var lStatus := 'game over';
+
+                 for each p: GKTurnBasedParticipant in fCurrentMatch.participants do begin
+                   if p.playerID = GKLocalPlayer.localPlayer.playerID then begin
+                     if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeWon then
+                       lStatus := 'you won'
+                     else if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeLost then
+                       lStatus := 'you lost'
+                     else
+                       lStatus := 'tied';
+                   end;
+                 end;
+
+                 fBoard.setStatus(lStatus); 
+               end, fCurrentMatch:matchID ≠ aMatch:matchID);
 end;
 {$ENDREGION}
 
@@ -326,7 +339,24 @@ begin
   if assigned(lWinner) then begin
     
     fBoard.acceptingTurn := false;
-    fBoard.setStatus('someone won');
+    if lWinner = "X" then
+      fBoard.setStatus('you won')
+    else
+      fBoard.setStatus('you lost'); // we can only get here in single player mode
+
+    if assigned(fCurrentMatch) then begin
+      
+      // only the player making the turn can win
+      for each p: GKTurnBasedParticipant in fCurrentMatch.participants do
+        if p.playerID = GKLocalPlayer.localPlayer.playerID then
+          p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeWon
+        else
+          p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeLost;
+      //fCurrentMatch.message := 'Game was tied.';
+      fCurrentMatch.endMatchInTurnWithMatchData(getMatchDataFromBoard) completionHandler(method (aError: NSError) begin
+
+        end);
+    end;
 
   end
   else if fBoard.isFull then begin
@@ -337,7 +367,7 @@ begin
     if assigned(fCurrentMatch) then begin
       for each p: GKTurnBasedParticipant in fCurrentMatch.participants do 
         p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeTied;
-        fCurrentMatch.message := 'Game was tied.';
+        //fCurrentMatch.message := 'Game was tied.';
         fCurrentMatch.endMatchInTurnWithMatchData(getMatchDataFromBoard) completionHandler(method (aError: NSError) begin
 
           end);
