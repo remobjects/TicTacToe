@@ -14,6 +14,7 @@ type
     
     fTentativeView: UIImageView;
     fTentativeGridIndex: GridIndex;
+    fTentativeInfo: String;
     fTentativeOk: Boolean;
 
     fTurnCount: Int32;
@@ -29,8 +30,11 @@ type
     method gridIndexForPoint(aPoint: CGPoint): GridIndex;
     method drawingOffsetForGridIndex(aGridIndex: GridIndex): CGPoint;
 
-    method markGrid(aX: Int32; aY: Int32; aPlayer: String; aImageview: UIImageView);
-    method playerimageForTurn(aPlayer: String): UIImageView;
+    method addMarkerNotAnimated(aX: Int32; aY: Int32; aPlayerAndVersion: String);
+
+    method nextPlayerImageForTurn(aPlayer: String): String;
+    method playerImage(aPlayerInfo: String): UIImageView;
+
   public
     method initWithFrame(aFrame: CGRect): id; override;
 
@@ -39,14 +43,19 @@ type
     property acceptingTurn: Boolean;
 
     //property GridInfo: array[0..2, 0..2] of NSString read fGridInfo; // internal error
+    //61139: Nougat: Internal error when exposing language array as property
 
     method markGrid(aX: Int32; aY: Int32; aPlayer: String); 
     method makeComputerMove(aPlayer: String);
     method isFull: Boolean; 
     method markWinner: String; 
-    method clear(aCompletion: block := nil);
+    method clear(aCompletion: block := nil; aClearAnimated: Boolean);
+
+    method saveToNSDictionary(aDictionary: NSMutableDictionary; aXPlayerID: String; aOPlayerID: String);
+    method loadFromNSDictionary(aDictionary: NSDictionary; aXPlayerID: String; aOPlayerID: String);
 
     method setStatus(aStatus: String);
+
 
     method beginTrackingWithTouch(aTouch: UITouch) withEvent(aEvent: UIEvent): Boolean; override;
     method continueTrackingWithTouch(aTouch: UITouch) withEvent(aEvent: UIEvent): Boolean; override;
@@ -80,7 +89,6 @@ begin
                                lGridImage.size.width,
                                lGridImage.size.height);
     fGridOffset := fGrid.frame.origin;
-    NSLog('%f, %f, %f', frame.size.height, lGridImage.size.height, (frame.size.height-lGridImage.size.width)/2);
     addSubview(fGrid);
 
     var lFont := UIFont.fontWithName('Bradley Hand') size(48);
@@ -94,72 +102,63 @@ begin
     fStatusLabel.backgroundColor := UIColor.colorWithRed(0) green(0) blue(0) alpha(0); 
     fStatusLabel.font := lFont; 
     fStatusLabel.textAlignment := NSTextAlignment.NSTextAlignmentCenter;
+    fStatusLabel.lineBreakMode := NSLineBreakMode.NSLineBreakByTruncatingMiddle;
     addSubview(fStatusLabel);
 
   end;
   result := self;
 end;
 
+method Board.nextPlayerImageForTurn(aPlayer: String): String;
+begin
+  var lTurnSuffix := (fTurnCount/2+1).stringValue;
+
+  result := aPlayer+lTurnSuffix;
+end;
+
+method Board.playerImage(aPlayerInfo: String): UIImageView;
+begin
+  result := new UIImageView withImage(UIImage.imageNamed(aPlayerInfo));
+end;
+
+method Board.addMarkerNotAnimated(aX: Int32; aY: Int32; aPlayerAndVersion: String); 
+begin
+  var lNewView := playerImage(aPlayerAndVersion);
+  var g: GridIndex; g.X := aX; g.Y := aY;
+  var f: CGRect;
+  f.origin := drawingOffsetForGridIndex(g);
+  f.size := lNewView.image.size;
+  lNewView.frame := f;
+  addSubview(lNewView);
+  fGridImages.addObject(lNewView);
+end;
+
 method Board.markGrid(aX: Int32; aY: Int32; aPlayer: String); 
-begin
-  markGrid(aX, aY, aPlayer, nil);
-end;
-
-method Board.playerimageForTurn(aPlayer: String): UIImageView;
-begin
-  NSLOg('turn %d', fTurnCount/2+1);
-  //var lTurnSuffix := (fTurnCount/2+1).stringValue;
-  var lTurnSuffix := NSNUmber.numberWithInt(fTurnCount/2+1).stringValue;
-  NSLOg('turn %@', lTurnSuffix);
-
-  aPlayer := aPlayer+lTurnSuffix;
-  result := new UIImageView withImage(UIImage.imageNamed(aPlayer));
-end;
-
-method Board.markGrid(aX: Int32; aY: Int32; aPlayer: String; aImageview: UIImageView); 
 require
  { 0 ≤ aX < 2;
   0 ≤ aY < 2;
   fGridInfo[aX, aY] = nil;
-  aPlayer in ['X','O'];} // Type Mismatch 0/0
+  aPlayer in ['X','O'];} //61141: Nougat: "Type Mismatch" error with no source info, when using "require"
 begin
-  //var lTrnSuffix := '1';  // crash, log, with ''
-  inc(fTurnCount);
-  NSLOg('turn %d', fTurnCount/2+1);
-  //var lTurnSuffix := (fTurnCount/2+1).stringValue;
-  var lTurnSuffix := NSNUmber.numberWithInt(fTurnCount/2+1).stringValue;
-  NSLOg('turn %@', lTurnSuffix);
 
-  //aPlayer := aPlayer.stringByAppendingString(lTurnSuffix);
-  fGridInfo[aX, aY] := aPlayer;
+  var lInfo  := nextPlayerImageForTurn(aPlayer);
+  fGridInfo[aX, aY] := lInfo;
+  var lNewView := playerImage(lInfo);
+  lNewView.alpha := 0;
 
-  if not assigned(aImageview) then begin
+  var f: CGRect;
   
-    var lNewView := playerimageForTurn(aPlayer);
-    lNewView.alpha := 0;
+  var g: GridIndex; g.X := aX; g.Y := aY;
+  f.origin := drawingOffsetForGridIndex(g);
+  f.size := lNewView.image.size;
+  lNewView.frame := f;
+  addSubview(lNewView);
+  fGridImages.addObject(lNewView);
 
-    var f: CGRect;
-  
-    var g: GridIndex; g.X := aX; g.Y := aY;
-    f.origin := drawingOffsetForGridIndex(g);
-    f.size := lNewView.image.size;
-    lNewView.frame := f;
-    addSubview(lNewView);
-    fGridImages.addObject(lNewView);
-
-    UIView.animateWithDuration(0.5) 
-            animations(method begin
-                lNewView.alpha := 1;
-              end);
-  end
-  else begin
-    fGridImages.addObject(aImageview);
-
-    {UIView.animateWithDuration(0.5) 
-            animations(method begin
-                aImageview.alpha := 1;
-              end);}
-  end;
+  UIView.animateWithDuration(0.5) 
+          animations(method begin
+              lNewView.alpha := 1;
+            end);
 end;
 
 method Board.beginTrackingWithTouch(aTouch: UITouch) withEvent(aEvent: UIEvent): Boolean;
@@ -176,7 +175,8 @@ begin
   var lFirst: Boolean;
 
   if not assigned(fTentativeView) then begin
-    fTentativeView := playerimageForTurn(player);
+    fTentativeInfo := nextPlayerImageForTurn(player);
+    fTentativeView := playerImage(fTentativeInfo);
     fTentativeView.alpha := 0;
     addSubview(fTentativeView);
     lFirst := true;
@@ -210,14 +210,22 @@ end;
 
 method Board.endTrackingWithTouch(aTouch: UITouch) withEvent(aEvent: UIEvent);
 begin
-  NSLog('endTrackingWithTouch');
   if assigned(fTentativeView) then begin
+
+    continueTrackingWithTouch(aTouch) withEvent(aEvent);
 
     if fTentativeOk then begin
 
-      markGrid(fTentativeGridIndex.X, fTentativeGridIndex.Y, player, fTentativeView);
+      fGridImages.addObject(fTentativeView);
+      fGridInfo[fTentativeGridIndex.X, fTentativeGridIndex.Y] := fTentativeInfo;
       if assigned(&delegate) then
         &delegate.board(self) playerDidSelectGridIndex(fTentativeGridIndex);
+
+      var lTempView := fTentativeView;
+      UIView.animateWithDuration(0.1) 
+             animations(method begin
+                 lTempView.alpha := 1.0;
+               end);
 
     end 
     else begin
@@ -232,9 +240,9 @@ begin
                end);
 
     end;
-    fTentativeView := nil;
 
   end;
+  fTentativeView := nil;
 end;
 
 method Board.gridIndexForPoint(aPoint: CGPoint): GridIndex;
@@ -322,32 +330,81 @@ begin
   end;
 end;
 
-method Board.clear(aCompletion: block := nil);
+method Board.clear(aCompletion: block := nil; aClearAnimated: Boolean);
 begin
   var lTempImages := fGridImages.copy;
   var lTempTentativeView := fTentativeView;
-
-  UIView.animateWithDuration(0.5) 
-      animations(method begin
-          for each i in lTempImages do
-            i.alpha := 0.0;
-          if assigned(lTempTentativeView) then
-            lTempTentativeView.alpha := 0;
-        end)
-      completion(method begin
-          for each i in lTempImages do
-            i.removeFromSuperview();
-          if assigned(lTempTentativeView) then
-            lTempTentativeView.removeFromSuperview();
-          if assigned(aCompletion) then
-            aCompletion();
-        end);
 
   fGridImages.removeAllObjects();
   for x: Int32 := 0 to 2 do 
     for y: Int32 := 0 to 2 do
       fGridInfo[x,y] := nil;
   fTurnCount := 0;
+
+  if aClearAnimated then begin
+
+    UIView.animateWithDuration(0.5) 
+        animations(method begin
+            for each i in lTempImages do
+              i.alpha := 0.0;
+            if assigned(lTempTentativeView) then
+              lTempTentativeView.alpha := 0;
+          end)
+        completion(method begin
+            for each i in lTempImages do
+              i.removeFromSuperview();
+            if assigned(lTempTentativeView) then
+              lTempTentativeView.removeFromSuperview();
+            if assigned(aCompletion) then
+              aCompletion();
+          end);
+
+  end
+  else begin
+
+    for each i in lTempImages do
+      i.removeFromSuperview();
+    if assigned(lTempTentativeView) then
+      lTempTentativeView.removeFromSuperview();
+    if assigned(aCompletion) then
+      aCompletion();
+
+  end;
+end;
+
+method Board.saveToNSDictionary(aDictionary: NSMutableDictionary; aXPlayerID: String; aOPlayerID: String);
+begin
+  if not assigned(aOPlayerID) then aOPlayerID := 'unknown';
+  for x: Int32 := 0 to 2 do begin
+    for y: Int32 := 0 to 2 do begin
+      var v := fGridInfo[x,y];
+      if length(v) > 0 then begin
+        var lKey := x.stringValue+'/'+y.stringValue;
+        var lPlayer := if v.hasPrefix('X') then aXPlayerID else aOPlayerID;
+        var lTokenVersion := v.substringFromIndex(1);
+        aDictionary.setValue(NSArray.arrayWithObjects(lPlayer, lTokenVersion, nil)) forKey(lKey); 
+      end;
+    end;
+  end;
+  //NSLog('saved %@ *X: %@, O: %@)', aDictionary, aXPlayerID, aOPlayerID);
+end;
+
+method Board.loadFromNSDictionary(aDictionary: NSDictionary; aXPlayerID: String; aOPlayerID: String);
+begin
+  clear(nil, false);
+  //NSLog('loading %@ *X: %@, O: %@)', aDictionary, aXPlayerID, aOPlayerID);
+  for x: Int32 := 0 to 2 do begin
+    for y: Int32 := 0 to 2 do begin
+      var lKey := x.stringValue+'/'+y.stringValue;
+      var lInfo := aDictionary.valueForKey(lKey);
+      if assigned(lInfo) and (lInfo.count = 2) then begin
+        var lPlayer := (if lInfo[0]:isEqualToString(aXPlayerID)then "X" else "O")+lInfo[1];
+        fGridInfo[x,y] := lPlayer;
+        addMarkerNotAnimated(x, y, lPlayer);
+        inc(fTurnCount);
+      end;
+    end;
+  end;
 end;
 
 end.

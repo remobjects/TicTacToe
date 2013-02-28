@@ -45,11 +45,13 @@ begin
     end;
 
   window := new UIWindow withFrame(UIScreen.mainScreen.bounds);
+
   var n := new UINavigationController withRootViewController(new RootViewController);
   n.navigationBar.tintColor := UIColor.darkGrayColor;
-  //n.navigationBar.titleTextAttributes := NSDictionary.dictionaryWithObject(UIColor.darkGrayColor) forKey(UITextAttributeTextColor); 
   window.rootViewController := n;
+  
   window.makeKeyAndVisible;
+  
   result := true;
 end;
 
