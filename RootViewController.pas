@@ -23,10 +23,16 @@ type
     method computerTurn;
     method loadCurrentMatch(aResumePlay: Boolean := true);
 
+    method setGameOverStatus(aMatch: GKTurnBasedMatch);
+    method setParticipantsTurnStatus(aParticipant: GKTurnBasedParticipant);
+
+    method updateGameCenterButton;
 
     [IBAction] method newGame(aSender: id);
     var fBoard: Board;
     var fCurrentMatch: GKTurnBasedMatch;
+
+    const KEY_CURRENT_MATCH_ID = 'CurrentMatchID';
   public
     method init: id; override;
 
@@ -34,17 +40,17 @@ type
     method didReceiveMemoryWarning; override;
 
     {$REGION IGKTurnBasedMatchmakerViewControllerDelegate}
-    method turnBasedMatchmakerViewControllerWasCancelled(aViewController: GameKit.GKTurnBasedMatchmakerViewController);
-    method turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) didFailWithError(aError: Foundation.NSError);
-    method turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) didFindMatch(aMatch: GameKit.GKTurnBasedMatch);
-    method turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) playerQuitForMatch(aMatch: GameKit.GKTurnBasedMatch);
+    method turnBasedMatchmakerViewControllerWasCancelled(aViewController: GKTurnBasedMatchmakerViewController);
+    method turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) didFailWithError(aError: NSError);
+    method turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) didFindMatch(aMatch: GKTurnBasedMatch);
+    method turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) playerQuitForMatch(aMatch: GKTurnBasedMatch);
     {$ENDREGION}
     
     {$REGION IGKTurnBasedEventHandlerDelegate}
-    method handleInviteFromGameCenter(playersToInvite: Foundation.NSArray);
-    method handleTurnEventForMatch(aMatch: GameKit.GKTurnBasedMatch) didBecomeActive(didBecomeActive: RemObjects.Oxygene.System.Boolean);
-    method handleTurnEventForMatch(aMatch: GameKit.GKTurnBasedMatch);
-    method handleMatchEnded(aMatch: GameKit.GKTurnBasedMatch);
+    method handleInviteFromGameCenter(playersToInvite: NSArray);
+    method handleTurnEventForMatch(aMatch: GKTurnBasedMatch) didBecomeActive(didBecomeActive: RemObjects.Oxygene.System.Boolean);
+    method handleTurnEventForMatch(aMatch: GKTurnBasedMatch);
+    method handleMatchEnded(aMatch: GKTurnBasedMatch);
     {$ENDREGION}
 
     {$REGION IBoardDelegate}
@@ -59,18 +65,31 @@ method RootViewController.init: id;
 begin
   self := inherited initWithNibName('RootViewController') bundle(nil);
   if assigned(self) then begin
-
     title := 'Tic Tac Toe';
-
-    // Custom initialization
-
   end;
   result := self;
+end;
+
+
+method RootViewController.didReceiveMemoryWarning;
+begin
+  inherited didReceiveMemoryWarning;
+  // Dispose of any resources that can be recreated.
 end;
 
 method RootViewController.viewDidLoad;
 begin
   inherited viewDidLoad;
+
+  GKLocalPlayer.localPlayer.authenticateHandler := method (aViewController: UIViewController; aError: NSError) begin
+        if assigned(aViewController) then begin
+          NSLog('authentication viewcontroller');
+          presentViewController(aViewController) animated(true) completion(nil); 
+        end
+        else begin
+          updateGameCenterButton();
+        end;
+    end;
 
   GKTurnBasedEventHandler.sharedTurnBasedEventHandler.delegate := self;
   
@@ -78,25 +97,72 @@ begin
   fBoard.delegate := self;
   view.addSubview(fBoard);
 
-  navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withTitle('Games') 
-                                                                                           style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
-                                                                                           target(self) 
-                                                                                           action(selector(newGame:)); 
+  updateGameCenterButton();
 
   fBoard.acceptingTurn := true;
   fBoard.setStatus('hello');
  
 end;
 
-method RootViewController.didReceiveMemoryWarning;
+method RootViewController.updateGameCenterButton;
 begin
-  inherited didReceiveMemoryWarning;
+  if GKLocalPlayer.localPlayer.isAuthenticated then begin
+    NSLog('player is authenticated with Game Center');
 
-  // Dispose of any resources that can be recreated.
+    if not assigned(navigationController.navigationBar.topItem.rightBarButtonItem) then
+      navigationController.navigationBar.topItem.rightBarButtonItem := new UIBarButtonItem withTitle('...') 
+                                                                                            style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
+                                                                                            target(self) 
+                                                                                            action(selector(newGame:));
+
+    GKTurnBasedMatch.loadMatchesWithCompletionHandler(method (aMatches: NSArray; aError: NSError) begin
+        
+        if assigned(aMatches) and (aMatches.count > 0) then begin
+          navigationController.navigationBar.topItem.rightBarButtonItem.title := 'Matches';
+          
+          var lLastMatchID := NSUserDefaults.standardUserDefaults.objectForKey(KEY_CURRENT_MATCH_ID);
+          if assigned(lLastMatchID) and not assigned(fCurrentMatch) then begin
+
+            for i: Int32 := 0 to aMatches.count-1 do begin var m := aMatches[i];
+            //for each m in aMatches do begin
+              if m.matchID = lLastMatchID then begin
+
+                fCurrentMatch := m;
+                loadCurrentMatch(true);
+                break;
+              end;
+            end;
+
+          end;
+
+        end
+        else begin
+          navigationController.navigationBar.topItem.rightBarButtonItem.title := 'Start';
+        end;
+
+      end);
+ 
+
+
+
+  end
+  else begin
+    NSLog('player is NOT authenticated with Game Center');
+    if assigned(navigationController.navigationBar.topItem.rightBarButtonItem) then
+      navigationController.navigationBar.topItem.rightBarButtonItem := nil;
+  end;
 end;
 
 method RootViewController.newGame(aSender: id);
 begin
+  if not GKLocalPlayer.localPlayer.isAuthenticated then begin
+    GKLocalPlayer.localPlayer.authenticateWithCompletionHandler(method (aError: NSError) begin
+        NSLog('authenticateWithCompletionHandler completion - Error:%@', aError);
+        if not assigned(aError) then newGame(nil);
+      end);
+    exit;
+  end;
+
   var request := new GKMatchRequest;
   request.minPlayers := 2;
   request.maxPlayers := 2;
@@ -109,45 +175,52 @@ begin
 end;
 
 {$REGION IGKTurnBasedMatchmakerViewControllerDelegate}
-method RootViewController.turnBasedMatchmakerViewControllerWasCancelled(aViewController: GameKit.GKTurnBasedMatchmakerViewController);
+method RootViewController.turnBasedMatchmakerViewControllerWasCancelled(aViewController: GKTurnBasedMatchmakerViewController);
 begin
   NSLog('turnBasedMatchmakerViewControllerWasCancelled:');
+  updateGameCenterButton();
   aViewController.dismissViewControllerAnimated(true) completion(nil);
 end;
 
-method RootViewController.turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) didFailWithError(aError: NSError);
+method RootViewController.turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) didFailWithError(aError: NSError);
 begin
   NSLog('turnBasedMatchmakerViewController:didFailWithError: %@', aError);
+  updateGameCenterButton();
   aViewController.dismissViewControllerAnimated(true) completion(nil);
 end;
 
-method RootViewController.turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) didFindMatch(aMatch: GameKit.GKTurnBasedMatch);
+method RootViewController.turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) didFindMatch(aMatch: GKTurnBasedMatch);
 begin
   NSLog('turnBasedMatchmakerViewController:didFindMatch:');
+  updateGameCenterButton();
   aViewController.dismissViewControllerAnimated(true) completion(nil);
 
   //fBoard.clear(); // Internal NRE
-  fBoard.clear(method begin
-                 
+  fBoard.clear(method begin                 
                  fCurrentMatch := aMatch;
+                 NSUserDefaults.standardUserDefaults.setObject(fCurrentMatch.matchID) forKey(KEY_CURRENT_MATCH_ID); 
                  loadCurrentMatch();
                end, true);
 end;
 
-method RootViewController.turnBasedMatchmakerViewController(aViewController: GameKit.GKTurnBasedMatchmakerViewController) playerQuitForMatch(aMatch: GameKit.GKTurnBasedMatch);
+method RootViewController.turnBasedMatchmakerViewController(aViewController: GKTurnBasedMatchmakerViewController) playerQuitForMatch(aMatch: GKTurnBasedMatch);
 begin
   NSLog('turnBasedMatchmakerViewController:playerQuitForMatch:');
 
-  if aMatch.currentParticipant.playerID =  GKLocalPlayer.localPlayer.playerID then begin
+  if (fCurrentMatch:matchID = aMatch:matchID) then 
+    fBoard.setStatus('game over'); 
+
+  if aMatch.currentParticipant.playerID = GKLocalPlayer.localPlayer.playerID then begin
     aMatch.participantQuitInTurnWithOutcome(GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeQuit) 
            nextParticipant(nextParticipantForMatch(aMatch)) 
-           matchData(nil) 
-           completionHandler(method begin
-        NSLog('participantQuitInTurnWithOutcome completion');
+           matchData(aMatch.matchData) 
+           completionHandler(method (aError: NSError) begin
+        NSLog('participantQuitInTurnWithOutcome completion - Error:%@', aError);
       end); 
   end
   else begin
-    aMatch.participantQuitOutOfTurnWithOutcome(GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeQuit) withCompletionHandler(method begin
+    aMatch.participantQuitOutOfTurnWithOutcome(GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeQuit) 
+           withCompletionHandler(method begin
         NSLog('participantQuitOutOfTurnWithOutcome completion');
       end) 
   end;
@@ -180,21 +253,7 @@ begin
   fBoard.clear(method begin
                  fCurrentMatch := aMatch;
                  loadCurrentMatch(false);
-
-                 var lStatus := 'game over';
-
-                 for each p: GKTurnBasedParticipant in fCurrentMatch.participants do begin
-                   if p.playerID = GKLocalPlayer.localPlayer.playerID then begin
-                     if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeWon then
-                       lStatus := 'you won'
-                     else if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeLost then
-                       lStatus := 'you lost'
-                     else
-                       lStatus := 'tied';
-                   end;
-                 end;
-
-                 fBoard.setStatus(lStatus); 
+                 setGameOverStatus(fCurrentMatch);
                end, fCurrentMatch:matchID ≠ aMatch:matchID);
 end;
 {$ENDREGION}
@@ -247,16 +306,8 @@ begin
     end
     else begin
       if  aResumePlay then begin
-        if length(fCurrentMatch.currentParticipant.playerID) > 0 then begin
-          fBoard.setStatus(fCurrentMatch.currentParticipant.playerID);
-          GKPlayer.loadPlayersForIdentifiers(NSArray.arrayWithObject(fCurrentMatch.currentParticipant.playerID)) 
-                   withCompletionHandler(method(aPlayers: NSArray; aError: NSError) begin
-                       NSLog('loadPlayersForIdentifiers:completion: completion(%@, %@)', aPlayers, aError);
-                       if aPlayers.count > 0 then
-                         dispatch_async(@_dispatch_main_q, -> fBoard.setStatus(aPlayers[0].alias));
-                        NSLog('alias: %@', aPlayers[0].alias);
-                     end);
-        end;
+        NSLog('current player (remote): %@', fCurrentMatch.currentParticipant);
+        setParticipantsTurnStatus(fCurrentMatch.currentParticipant);
       end
       else begin
         fBoard.setStatus('waiting for player');
@@ -265,16 +316,54 @@ begin
   end
   else begin
     if aResumePlay then 
-      fBoard.setStatus('game over'); // shouldn't really happen
+      setGameOverStatus(fCurrentMatch);
   end;
 end;
+
+method RootViewController.setGameOverStatus(aMatch: GKTurnBasedMatch);
+begin
+  var lStatus := 'game over';
+  for each p: GKTurnBasedParticipant in aMatch.participants do begin
+    if p.playerID = GKLocalPlayer.localPlayer.playerID then begin
+      if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeWon then
+        lStatus := "you've won"
+      else if p.matchOutcome = GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeLost then
+        lStatus := "you've lost"
+      else
+        lStatus := 'game tied';
+      break;
+    end;
+  end;
+  fBoard.setStatus(lStatus); 
+end;
+
+
+method RootViewController.setParticipantsTurnStatus(aParticipant: GKTurnBasedParticipant);
+begin
+  if length(aParticipant.playerID) > 0 then begin
+    GKPlayer.loadPlayersForIdentifiers(NSArray.arrayWithObject(aParticipant.playerID)) 
+              withCompletionHandler(method(aPlayers: NSArray; aError: NSError) begin
+                  NSLog('loadPlayersForIdentifiers:completion: completion(%@, %@)', aPlayers, aError);
+                  if aPlayers.count > 0 then
+                    //dispatch_async(@_dispatch_main_q, -> fBoard.setStatus(aPlayers[0].alias+"'s turn"))
+                    fBoard.setStatus(aPlayers[0].alias+"'s turn")
+                  else
+                    //dispatch_async(@_dispatch_main_q, -> fBoard.setStatus(aParticipant.playerID+"'s turn"))
+                    fBoard.setStatus(aParticipant.playerID+"'s turn")
+                end);
+  end
+  else begin
+    fBoard.setStatus('waiting');
+  end;
+end;
+
+
 
 method RootViewController.yourTurn;
 begin
   fBoard.acceptingTurn := true;
   fBoard.setStatus('your turn.');
 end;
-
 
 method RootViewController.remoteParticipantForMatch(aMatch: GKTurnBasedMatch): GKTurnBasedParticipant;
 begin
@@ -302,9 +391,9 @@ end;
 method RootViewController.remoteTurn;
 begin
   fBoard.acceptingTurn := false;
-  fBoard.setStatus('waiting');
 
-  fCurrentMatch.endTurnWithNextParticipant(nextParticipantForMatch(fCurrentMatch)) 
+  setParticipantsTurnStatus(remoteParticipantForMatch(fCurrentMatch));
+  fCurrentMatch.endTurnWithNextParticipant(remoteParticipantForMatch(fCurrentMatch)) 
                 matchData(getMatchDataFromBoard)
                 completionHandler(method (aError: NSError) begin
                     NSLog('endTurnWithNextParticipant completion');
@@ -340,9 +429,9 @@ begin
     
     fBoard.acceptingTurn := false;
     if lWinner = "X" then
-      fBoard.setStatus('you won')
+      fBoard.setStatus("you've won")
     else
-      fBoard.setStatus('you lost'); // we can only get here in single player mode
+      fBoard.setStatus("you'lost lost"); // we can only get here in single player mode
 
     if assigned(fCurrentMatch) then begin
       

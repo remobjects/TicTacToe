@@ -27,23 +27,6 @@ implementation
 
 method AppDelegate.application(application: UIApplication) didFinishLaunchingWithOptions(launchOptions: NSDictionary): Boolean;
 begin
-  var localPlayer := GKLocalPlayer.localPlayer;
-  localPlayer.authenticateHandler := method (aViewController: UIViewController; aError: NSError) begin
-        if assigned(viewController) then begin
-          NSLog('authentication viewcontroller');
-          //showAuthenticationDialogWhenReasonable(viewController);
-          window.rootViewController.presentViewController(aViewController) animated(true) completion(nil); 
-        end
-        else if localPlayer.isAuthenticated then begin
-          NSLog('player is authenticated');
-            //[self authenticatedPlayer: localPlayer];
-        end
-        else begin
-          NSLog('player is NOT authenticated');
-          //  [self disableGameCenter];
-        end;
-    end;
-
   window := new UIWindow withFrame(UIScreen.mainScreen.bounds);
 
   var n := new UINavigationController withRootViewController(new RootViewController);
