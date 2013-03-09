@@ -43,9 +43,6 @@ type
     property player: String := 'X'; 
     property acceptingTurn: Boolean;
 
-    //property GridInfo: array[0..2, 0..2] of NSString read fGridInfo; // internal error
-    //61139: Nougat: Internal error when exposing language array as property
-
     method markGrid(aX: Int32; aY: Int32; aPlayer: String); 
     method makeComputerMove(aPlayer: String);
     method isFull: Boolean; 
@@ -92,7 +89,7 @@ begin
     fGridOffset := fGrid.frame.origin;
     addSubview(fGrid);
 
-    var lFont := UIFont.fontWithName('Bradley Hand') size(48);
+    var lFont := UIFont.fontWithName('Bradley Hand') size(32);
 
     var f := frame;
     f.origin.y := fGrid.frame.origin.y + fGrid.frame.size.height + 10; // 30 on 4"?
@@ -113,6 +110,7 @@ end;
 method Board.nextPlayerImageForTurn(aPlayer: String): String;
 begin
   var lTurnSuffix := (fTurnCount/2+1).stringValue;
+  inc(fTurnCount);
 
   result := aPlayer+lTurnSuffix;
 end;
@@ -136,10 +134,10 @@ end;
 
 method Board.markGrid(aX: Int32; aY: Int32; aPlayer: String); 
 require
- { 0 ≤ aX < 2;
-  0 ≤ aY < 2;
+  0 ≤ aX ≤ 2;
+  0 ≤ aY ≤ 2;
   fGridInfo[aX, aY] = nil;
-  aPlayer in ['X','O'];} //61141: Nougat: "Type Mismatch" error with no source info, when using "require"
+  aPlayer in ['X','O'];
 begin
 
   var lInfo  := nextPlayerImageForTurn(aPlayer);
@@ -268,17 +266,16 @@ begin
                 2: Y2+10;
               end;}
   result := CGPointMake(10+110*aGridIndex.X+fGridOffset.x, 10+100*aGridIndex.Y+fGridOffset.y);
-
 end;
 
 method Board.makeComputerMove(aPlayer: String);
 begin
+  var aMove:= new ComputerPlayer();
   for x: Int32 := 0 to 2 do 
     for y: Int32 := 0 to 2 do
-      if not assigned(fGridInfo[x,y]) then begin
-        markGrid(x, y, aPlayer);
-        exit;
-      end;
+      aMove.SetGridInfo(x,y,fGridInfo[x,y]);
+  aMove.makeBestMove(aPlayer);
+  markGrid(aMove.MoveLocation.X, aMove.MoveLocation.Y, aPlayer);
 end;
 
 method Board.isFull: Boolean;
@@ -299,7 +296,7 @@ end;
 
 method Board.markWinner: String;
 begin
-  // won't win any nobel price for achievements in the computer sciences, but gets the job done:
+  // won't win any nobel prizes for achievements in the computer sciences, but gets the job done:
 
   // horizontals
   for x: Int32 := 0 to 2 do begin
@@ -393,7 +390,7 @@ begin
 
     for each i in lTempImages do
       i.removeFromSuperview();
-    if assigned(lTempTentativeView) then
+    if assigned(lTempTentativeView) then 
       lTempTentativeView.removeFromSuperview();
     if assigned(aCompletion) then
       aCompletion();
