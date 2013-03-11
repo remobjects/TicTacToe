@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="AppDelegate.pas" />
     <Compile Include="Board.pas" />
+    <Compile Include="ComputerPlayer.pas" />
     <Compile Include="Program.pas" />
     <Compile Include="RootViewController.pas" />
   </ItemGroup>

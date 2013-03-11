@@ -8,7 +8,9 @@ uses
 
 type
   [IBObject]
-  RootViewController = public class(UIViewController, IGKTurnBasedMatchmakerViewControllerDelegate, IGKTurnBasedEventHandlerDelegate, IBoardDelegate)
+  RootViewController = public class(UIViewController, IUIActionSheetDelegate,
+                                    IGKTurnBasedMatchmakerViewControllerDelegate, IGKTurnBasedEventHandlerDelegate, 
+                                    IBoardDelegate)
   private
     method dictionaryFromData(aData: NSData): NSDictionary;
     method dataFromDictionary(aDictioanry: NSDictionary): NSData;
@@ -29,15 +31,22 @@ type
     method updateGameCenterButton;
 
     [IBAction] method newGame(aSender: id);
+    [IBAction] method newComputerGame(aSender: id);
+
     var fBoard: Board;
     var fCurrentMatch: GKTurnBasedMatch;
 
     const KEY_CURRENT_MATCH_ID = 'CurrentMatchID';
+    const KEY_COMPUTER_STARTS_NEXT = 'ComputerStartsNext';
   public
     method init: id; override;
 
     method viewDidLoad; override;
     method didReceiveMemoryWarning; override;
+
+    {$REGION IUIActionSheetDelegate}
+    method actionSheet(aActionSheet: UIKit.UIActionSheet) clickedButtonAtIndex(aButtonIndex: Foundation.NSInteger);
+    {$ENDREGION}
 
     {$REGION IGKTurnBasedMatchmakerViewControllerDelegate}
     method turnBasedMatchmakerViewControllerWasCancelled(aViewController: GKTurnBasedMatchmakerViewController);
@@ -93,15 +102,16 @@ begin
 
   GKTurnBasedEventHandler.sharedTurnBasedEventHandler.delegate := self;
   
+  navigationController.navigationBar.topItem.leftBarButtonItem := new UIBarButtonItem withTitle('Computer') 
+                                                                                      style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
+                                                                                      target(self) 
+                                                                                      action(selector(newComputerGame:));
+
   fBoard := new Board withFrame(view.frame);
   fBoard.delegate := self;
   view.addSubview(fBoard);
 
   updateGameCenterButton();
-
-  fBoard.acceptingTurn := true;
-  fBoard.setStatus('hello');
- 
 end;
 
 method RootViewController.updateGameCenterButton;
@@ -123,8 +133,7 @@ begin
           var lLastMatchID := NSUserDefaults.standardUserDefaults.objectForKey(KEY_CURRENT_MATCH_ID);
           if assigned(lLastMatchID) and not assigned(fCurrentMatch) then begin
 
-            for i: Int32 := 0 to aMatches.count-1 do begin var m := aMatches[i];
-            //for each m in aMatches do begin
+            for each m in aMatches do begin
               if m.matchID = lLastMatchID then begin
 
                 fCurrentMatch := m;
@@ -140,17 +149,50 @@ begin
           navigationController.navigationBar.topItem.rightBarButtonItem.title := 'Start';
         end;
 
+        if not assigned(fCurrentMatch) then
+          newComputerGame(nil); 
+
       end);
- 
-
-
 
   end
   else begin
     NSLog('player is NOT authenticated with Game Center');
     if assigned(navigationController.navigationBar.topItem.rightBarButtonItem) then
       navigationController.navigationBar.topItem.rightBarButtonItem := nil;
+    newComputerGame(nil); 
   end;
+end;
+
+{$REGION IUIActionSheetDelegate}
+method RootViewController.actionSheet(aActionSheet: UIKit.UIActionSheet) clickedButtonAtIndex(aButtonIndex: Foundation.NSInteger);
+begin
+  if aButtonIndex = 0 then newComputerGame(nil);
+end;
+{$ENDREGION}
+
+method RootViewController.newComputerGame(aSender: id);
+begin
+  if assigned(aSender) and not assigned(fCurrentMatch) and not fBoard.isEmpty then begin
+
+    var lAction := new UIActionSheet withTitle('Cancel current game') 
+                                     &delegate(self) cancelButtonTitle('No, keep playing') 
+                                     destructiveButtonTitle('Yes, start new game') 
+                                     otherButtonTitles(nil);
+    lAction.showFromBarButtonItem(navigationController.navigationBar.topItem.leftBarButtonItem) animated(true);
+    exit;
+  end;
+
+  fBoard.clear(method begin                 
+                 fCurrentMatch := nil;
+
+                 var lComputerStartsNext := NSUserDefaults.standardUserDefaults.boolForKey(KEY_COMPUTER_STARTS_NEXT);
+                 if lComputerStartsNext then
+                   computerTurn()
+                 else
+                   yourTurm();
+
+                 NSUserDefaults.standardUserDefaults.setBool(not lComputerStartsNext) forKey(KEY_COMPUTER_STARTS_NEXT); 
+               end, true);
 end;
 
 method RootViewController.newGame(aSender: id);
@@ -167,7 +209,7 @@ begin
   request.minPlayers := 2;
   request.maxPlayers := 2;
  
-  var mmvc := new GKTurnBasedMatchmakerViewController WithMatchRequest(request);
+  var mmvc := new GKTurnBasedMatchmakerViewController withMatchRequest(request);
   mmvc.turnBasedMatchmakerDelegate := self;
   mmvc.showExistingMatches := true;
   presentViewController(mmvc) animated(true) completion(nil);

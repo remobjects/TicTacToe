@@ -46,7 +46,9 @@ type
     method markGrid(aX: Int32; aY: Int32; aPlayer: String); 
     method makeComputerMove(aPlayer: String);
     method isFull: Boolean; 
+    method isEmpty: Boolean;
     method markWinner: String; 
+
     method clear(aCompletion: block := nil; aClearAnimated: Boolean);
 
     method saveToNSDictionary(aDictionary: NSMutableDictionary; aXPlayerID: String; aOPlayerID: String);
@@ -283,6 +285,16 @@ begin
   for x: Int32 := 0 to 2 do 
     for y: Int32 := 0 to 2 do
       if not assigned(fGridInfo[x,y]) then begin
+        exit false;
+      end;
+  result := true;
+end;
+
+method Board.isEmpty: Boolean;
+begin
+  for x: Int32 := 0 to 2 do 
+    for y: Int32 := 0 to 2 do
+      if assigned(fGridInfo[x,y]) then begin
         exit false;
       end;
   result := true;
