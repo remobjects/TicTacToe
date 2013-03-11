@@ -47,6 +47,7 @@ type
     method makeComputerMove(aPlayer: String);
     method isFull: Boolean; 
     method isEmpty: Boolean;
+    method isGameOver: Boolean;
     method markWinner: String; 
 
     method clear(aCompletion: block := nil; aClearAnimated: Boolean);
@@ -298,6 +299,11 @@ begin
         exit false;
       end;
   result := true;
+end;
+
+method Board.isGameOver: Boolean;
+begin
+  result := isFull or assigned(markWinner); // ToDo: refactor once markWinner does more than just CALCULATE the winner
 end;
 
 method Board.playerAtCoordinates(x, y: Int32): String;

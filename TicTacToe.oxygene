@@ -44,6 +44,9 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
+    <ProvisioningProfile>DCC6DC43-80C6-4F9A-8EA0-98629AF70DB5</ProvisioningProfile>
+    <ProvisioningProfileName>TicTacToe App Store</ProvisioningProfileName>
+    <CodesignCertificateName>iPhone Distribution: RemObjects Software</CodesignCertificateName>
     <CreateIPA>True</CreateIPA>
   </PropertyGroup>
   <ItemGroup>
@@ -137,7 +140,6 @@
     </AppResource>
     <Content Include="Resources\Info.plist" />
     <AppResource Include="Resources\App Icons\App-29.png" />
-    <AppResource Include="Resources\App Icons\App-48.png" />
     <AppResource Include="Resources\App Icons\App-57.png" />
     <AppResource Include="Resources\App Icons\App-58.png" />
     <AppResource Include="Resources\App Icons\App-96.png" />

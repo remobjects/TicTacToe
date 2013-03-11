@@ -33,6 +33,7 @@ type
     [IBAction] method newGame(aSender: id);
     [IBAction] method newComputerGame(aSender: id);
 
+    var fInitialLaunchComplete: Boolean;
     var fBoard: Board;
     var fCurrentMatch: GKTurnBasedMatch;
 
@@ -74,7 +75,7 @@ method RootViewController.init: id;
 begin
   self := inherited initWithNibName('RootViewController') bundle(nil);
   if assigned(self) then begin
-    title := 'Tic Tac Toe';
+    //title := 'Tic Tac Toe';
   end;
   result := self;
 end;
@@ -102,7 +103,7 @@ begin
 
   GKTurnBasedEventHandler.sharedTurnBasedEventHandler.delegate := self;
   
-  navigationController.navigationBar.topItem.leftBarButtonItem := new UIBarButtonItem withTitle('Computer') 
+  navigationController.navigationBar.topItem.leftBarButtonItem := new UIBarButtonItem withTitle('New Computer Match') 
                                                                                       style(UIBarButtonItemStyle.UIBarButtonItemStyleBordered) 
                                                                                       target(self) 
                                                                                       action(selector(newComputerGame:));
@@ -149,8 +150,10 @@ begin
           navigationController.navigationBar.topItem.rightBarButtonItem.title := 'Start';
         end;
 
-        if not assigned(fCurrentMatch) then
-          newComputerGame(nil); 
+        if not assigned(fCurrentMatch) and not fInitialLaunchComplete then
+          newComputerGame(nil);
+ 
+        fInitialLaunchComplete := true;
 
       end);
 
@@ -172,9 +175,12 @@ end;
 
 method RootViewController.newComputerGame(aSender: id);
 begin
-  if assigned(aSender) and not assigned(fCurrentMatch) and not fBoard.isEmpty then begin
+  if assigned(aSender) and // not called from UI? always start right away
+     not assigned(fCurrentMatch) and // in a Game Center match? always start right away, since we can go back via Games button 
+     not fBoard.isEmpty and // no move made yet? no need to ask whether to cancel
+     not fBoard.isGameOver then begin // Game over? also no sense in askling for confirmation
 
-    var lAction := new UIActionSheet withTitle('Cancel current game') 
+    var lAction := new UIActionSheet withTitle('Cancel current game?') 
                                      &delegate(self) cancelButtonTitle('No, keep playing') 
                                      destructiveButtonTitle('Yes, start new game') 
                                      otherButtonTitles(nil);
@@ -192,6 +198,7 @@ begin
                    yourTurm();
 
                  NSUserDefaults.standardUserDefaults.setBool(not lComputerStartsNext) forKey(KEY_COMPUTER_STARTS_NEXT); 
+                 NSUserDefaults.standardUserDefaults.setObject(nil) forKey(KEY_CURRENT_MATCH_ID); 
                end, true);
 end;
 
@@ -352,7 +359,7 @@ begin
         setParticipantsTurnStatus(fCurrentMatch.currentParticipant);
       end
       else begin
-        fBoard.setStatus('waiting for player');
+        setParticipantsTurnStatus(fCurrentMatch.currentParticipant);
       end;
     end;
   end
@@ -395,7 +402,7 @@ begin
                 end);
   end
   else begin
-    fBoard.setStatus('waiting');
+    fBoard.setStatus('waiting for player');
   end;
 end;
 
@@ -473,7 +480,7 @@ begin
     if lWinner = "X" then
       fBoard.setStatus("you've won")
     else
-      fBoard.setStatus("you'lost lost"); // we can only get here in single player mode
+      fBoard.setStatus("you've lost"); // we can only get here in single player mode
 
     if assigned(fCurrentMatch) then begin
       
@@ -483,9 +490,9 @@ begin
           p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeWon
         else
           p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeLost;
-      //fCurrentMatch.message := 'Game was tied.';
+      
       fCurrentMatch.endMatchInTurnWithMatchData(getMatchDataFromBoard) completionHandler(method (aError: NSError) begin
-
+          NSLog('endMatchInTurnWithMatchData:completionHandler: completion(%@)', aError);
         end);
     end;
 
@@ -496,12 +503,14 @@ begin
     fBoard.setStatus('game over');
 
     if assigned(fCurrentMatch) then begin
+
       for each p: GKTurnBasedParticipant in fCurrentMatch.participants do 
         p.matchOutcome := GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeTied;
-        //fCurrentMatch.message := 'Game was tied.';
-        fCurrentMatch.endMatchInTurnWithMatchData(getMatchDataFromBoard) completionHandler(method (aError: NSError) begin
 
-          end);
+      fCurrentMatch.endMatchInTurnWithMatchData(getMatchDataFromBoard) completionHandler(method (aError: NSError) begin
+          NSLog('endMatchInTurnWithMatchData:completionHandler: completion(%@)', aError);
+        end);
+
     end;
 
   end
