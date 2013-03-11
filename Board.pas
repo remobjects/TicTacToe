@@ -270,12 +270,12 @@ end;
 
 method Board.makeComputerMove(aPlayer: String);
 begin
+  var aMove:= new ComputerPlayer();
   for x: Int32 := 0 to 2 do 
     for y: Int32 := 0 to 2 do
-      if not assigned(fGridInfo[x,y]) then begin
-        markGrid(x, y, aPlayer);
-        exit;
-      end;
+      aMove.SetGridInfo(x,y,fGridInfo[x,y]);
+  aMove.makeBestMove(aPlayer);
+  markGrid(aMove.MoveLocation.X, aMove.MoveLocation.Y, aPlayer);
 end;
 
 method Board.isFull: Boolean;
@@ -296,7 +296,7 @@ end;
 
 method Board.markWinner: String;
 begin
-  // won't win any nobel price for achievements in the computer sciences, but gets the job done:
+  // won't win any nobel prizes for achievements in the computer sciences, but gets the job done:
 
   // horizontals
   for x: Int32 := 0 to 2 do begin
