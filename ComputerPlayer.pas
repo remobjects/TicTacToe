@@ -8,8 +8,8 @@ uses
 type
   ComputerPlayer = public class
   private
-    fMoveLocation:GridIndex;
-    fGridInfo:array[0..2, 0..2] of NSString;
+    fBoard: Board;
+    fGridInfo:TGridInfoArray;
     fComputerPlayer: String;
     fForkSquares: Array[1..9] of NSInteger;
 
@@ -39,9 +39,8 @@ type
 
   protected
   public
-    method makeBestMove(aPlayer: String);
+    method makeBestMove(aPlayer: String; var aBoard:Board);
     method SetGridInfo(x, y : Int32; aplayer:String);
-    property MoveLocation:GridIndex read fMoveLocation;
   end;
 { To make this clearer, the grid (which is in 2x2 array on the board) is referred to by number representing each of the nine squares, as follows:
   1 | 2 | 3
@@ -50,7 +49,7 @@ type
   ---------
   7 | 8 | 9
 
-  The board calls makeBestMove which will work out the best location to go, and the board will go in this location (MoveLocation).
+  The board calls makeBestMove which will work out the best location to go, and the board will go in this location.
   This calls a series of possible moves in the order most likely to win the game (or at least, not lose).
 }
 implementation
@@ -160,9 +159,7 @@ begin
   var y : Int32 := YforPos(a);
 
   if not assigned(fGridInfo[x,y]) then begin
-    fMoveLocation.X:=x;
-    fMoveLocation.Y:=y;
-    //fBoard.markGrid(x, y, fComputerPlayer);
+    fBoard.markGrid(x, y, fComputerPlayer);
     result:=True;
   end else result:=false;
 end;
@@ -253,14 +250,14 @@ begin
   result:=CanPlay(2) or CanPlay(4) or CanPlay(6) or CanPlay(8);
 end;
 
-method ComputerPlayer.makeBestMove(aPlayer: String);
+method ComputerPlayer.makeBestMove(aPlayer: String; var aBoard:Board);
 begin
   fComputerPlayer:=aPlayer;
+  fBoard:=aBoard;
+  fGridInfo:=fBoard.GridInfo;
   if CanWin or CanBlock or CanFork or CanBlockFork or
      CanGoInCentre or CanGoInOppositeCorner or CanGoInEmptyCorner or CanGoInEmptySide
   then exit;
-  fMoveLocation.X:=-1;
-  fMoveLocation.Y:=-1;
 end;
 
 method ComputerPlayer.SetGridInfo(x: Int32; y: Int32; aplayer: String);

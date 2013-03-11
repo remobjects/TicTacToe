@@ -5,6 +5,8 @@ interface
 uses
   UIKit;
 
+type TGridInfoArray=array[0..2, 0..2] of NSString;
+
 type
   [IBObject]
   Board = public class(UIControl)
@@ -19,7 +21,7 @@ type
 
     fTurnCount: Int32;
     fGridImages: NSMutableArray := new NSMutableArray;
-    fGridInfo: array[0..2, 0..2] of NSString;
+    fGridInfo: TGridInfoArray;
 
     const 
       X1 = 92;
@@ -42,6 +44,7 @@ type
     property &delegate: weak IBoardDelegate;
     property player: String := 'X'; 
     property acceptingTurn: Boolean;
+    property GridInfo: TGridInfoArray read fGridInfo;
 
     method markGrid(aX: Int32; aY: Int32; aPlayer: String); 
     method makeComputerMove(aPlayer: String);
@@ -274,11 +277,10 @@ end;
 method Board.makeComputerMove(aPlayer: String);
 begin
   var aMove:= new ComputerPlayer();
-  for x: Int32 := 0 to 2 do 
+  {for x: Int32 := 0 to 2 do 
     for y: Int32 := 0 to 2 do
-      aMove.SetGridInfo(x,y,fGridInfo[x,y]);
-  aMove.makeBestMove(aPlayer);
-  markGrid(aMove.MoveLocation.X, aMove.MoveLocation.Y, aPlayer);
+      aMove.SetGridInfo(x,y,fGridInfo[x,y]);}
+  aMove.makeBestMove(aPlayer, var self);
 end;
 
 method Board.isFull: Boolean;
