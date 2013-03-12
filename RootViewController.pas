@@ -454,7 +454,7 @@ end;
 method RootViewController.computerTurn;
 begin
   fBoard.acceptingTurn := false;
-  fBoard.setStatus('thinkng...');
+  fBoard.setStatus('thinking...');
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
           
       NSThread.sleepForTimeInterval(0.75);
