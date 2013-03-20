@@ -21,7 +21,6 @@ type
 
     fTurnCount: Int32;
     fGridImages: NSMutableArray := new NSMutableArray;
-    fGridInfo2: TGridInfoArray;
     fGridInfo: array[0..2, 0..2] of NSString; 
 
     const 

@@ -38,7 +38,7 @@ type
 
   protected
   public
-    method makeBestMove(aPlayer: String; {var} aBoard:Board);
+    method makeBestMove(aPlayer: String; aBoard:Board);
     method SetGridInfo(x, y : Int32; aPlayer:String);
   end;
 
@@ -50,8 +50,8 @@ type
   7 | 8 | 9
 
   The board calls makeBestMove which will work out the best location to go, and the board will go in this location.
-  This calls a series of possible moves in the order most likely to win the game (or at least, not lose).
-}
+  This calls a series of possible moves in the order most likely to win the game (or at least, not lose).}
+
 implementation
 
 method ComputerPlayer.playerAtCoordinates(x, y: Int32): String;
@@ -250,7 +250,7 @@ begin
   result:=CanPlay(2) or CanPlay(4) or CanPlay(6) or CanPlay(8);
 end;
 
-method ComputerPlayer.makeBestMove(aPlayer: String; {var }aBoard:Board);
+method ComputerPlayer.makeBestMove(aPlayer: String; aBoard:Board);
 begin
   fComputerPlayer := aPlayer;
   fBoard := aBoard;
@@ -261,16 +261,7 @@ begin
      CanGoInCentre or 
      CanGoInOppositeCorner or 
      CanGoInEmptyCorner or 
-     CanGoInEmptySide then exit;
-
-
-{Thread 0 Crashed:: Dispatch queue: com.apple.main-thread
-0   libobjc.A.dylib               	0x00074d8b objc_retain + 27
-1   libobjc.A.dylib               	0x00075ff3 objc_retainAutorelease + 17
-2   TicTacToe                     	0x0000d1d2 -[ComputerPlayer makeBestMove::] + 178
-3   TicTacToe                     	0x0000512f -[Board makeComputerMove:] + 271
-4   TicTacToe                     	0x00013c16 RootViewController <computerTurn>b__1$0 + 134
-}
+     CanGoInEmptySide then;
 end;
 
 method ComputerPlayer.SetGridInfo(x: Int32; y: Int32; aPlayer: String);
