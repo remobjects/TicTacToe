@@ -21,7 +21,8 @@ type
 
     fTurnCount: Int32;
     fGridImages: NSMutableArray := new NSMutableArray;
-    fGridInfo: TGridInfoArray;
+    fGridInfo2: TGridInfoArray;
+    fGridInfo: array[0..2, 0..2] of NSString; 
 
     const 
       X1 = 92;
@@ -37,6 +38,7 @@ type
 
     method nextPlayerImageForTurn(aPlayer: String): String;
     method playerImage(aPlayerInfo: String): UIImageView;
+    method getGridInfo(aX: Int32; aY: Int32): String;
 
   public
     method initWithFrame(aFrame: CGRect): id; override;
@@ -44,7 +46,7 @@ type
     property &delegate: weak IBoardDelegate;
     property player: String := 'X'; 
     property acceptingTurn: Boolean;
-    property GridInfo: TGridInfoArray read fGridInfo;
+    property GridInfo[x,y: Int32]: String read getGridInfo;
 
     method markGrid(aX: Int32; aY: Int32; aPlayer: String); 
     method makeComputerMove(aPlayer: String);
@@ -277,10 +279,7 @@ end;
 method Board.makeComputerMove(aPlayer: String);
 begin
   var aMove:= new ComputerPlayer();
-  {for x: Int32 := 0 to 2 do 
-    for y: Int32 := 0 to 2 do
-      aMove.SetGridInfo(x,y,fGridInfo[x,y]);}
-  aMove.makeBestMove(aPlayer, var self);
+  aMove.makeBestMove(aPlayer, self);
 end;
 
 method Board.isFull: Boolean;
@@ -451,6 +450,14 @@ begin
       end;
     end;
   end;
+end;
+
+method Board.getGridInfo(aX: Int32; aY: Int32): String;
+require
+  0 ≤ aX ≤ 2;
+  0 ≤ aY ≤ 2;
+begin
+  result := fGridInfo[aX, aY];
 end;
 
 end.

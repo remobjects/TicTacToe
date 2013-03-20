@@ -9,7 +9,6 @@ type
   ComputerPlayer = public class
   private
     fBoard: Board;
-    fGridInfo:TGridInfoArray;
     fComputerPlayer: String;
     fForkSquares: Array[1..9] of NSInteger;
 
@@ -39,9 +38,10 @@ type
 
   protected
   public
-    method makeBestMove(aPlayer: String; var aBoard:Board);
-    method SetGridInfo(x, y : Int32; aplayer:String);
+    method makeBestMove(aPlayer: String; {var} aBoard:Board);
+    method SetGridInfo(x, y : Int32; aPlayer:String);
   end;
+
 { To make this clearer, the grid (which is in 2x2 array on the board) is referred to by number representing each of the nine squares, as follows:
   1 | 2 | 3
   ---------
@@ -56,17 +56,17 @@ implementation
 
 method ComputerPlayer.playerAtCoordinates(x, y: Int32): String;
 begin
-  result := fGridInfo[x,y]:substringToIndex(1); 
+  result := fBoard.GridInfo[x,y]:substringToIndex(1); 
 end;
 
 method ComputerPlayer.OpponentInPosition(x, y : Int32):Boolean;
 begin
-  result:=assigned(fGridInfo[x,y]) and (playerAtCoordinates(x, y) <> fComputerPlayer);
+  result:=assigned(fBoard.GridInfo[x,y]) and (playerAtCoordinates(x, y) <> fComputerPlayer);
 end;
  
 method ComputerPlayer.ComputerInPosition(x, y : Int32):Boolean;
 begin
-  result:=assigned(fGridInfo[x,y]) and (playerAtCoordinates(x, y) = fComputerPlayer);
+  result:=assigned(fBoard.GridInfo[x,y]) and (playerAtCoordinates(x, y) = fComputerPlayer);
 end;
 
 method ComputerPlayer.OpponentInSquare(a: Int32): Boolean;
@@ -87,7 +87,7 @@ method ComputerPlayer.EmptySquare(a : Int32):Boolean;
 begin
   var x : Int32 := XforPos(a);
   var y : Int32 := YforPos(a);
-  exit not assigned(fGridInfo[x,y]);
+  exit not assigned(fBoard.GridInfo[x,y]);
 end; 
 
 method ComputerPlayer.XforPos(p: Int32): Int32;
@@ -158,7 +158,7 @@ begin
   var x : Int32 := XforPos(a);
   var y : Int32 := YforPos(a);
 
-  if not assigned(fGridInfo[x,y]) then begin
+  if not assigned(fBoard.GridInfo[x,y]) then begin
     fBoard.markGrid(x, y, fComputerPlayer);
     result:=True;
   end else result:=false;
@@ -250,19 +250,32 @@ begin
   result:=CanPlay(2) or CanPlay(4) or CanPlay(6) or CanPlay(8);
 end;
 
-method ComputerPlayer.makeBestMove(aPlayer: String; var aBoard:Board);
+method ComputerPlayer.makeBestMove(aPlayer: String; {var }aBoard:Board);
 begin
-  fComputerPlayer:=aPlayer;
-  fBoard:=aBoard;
-  fGridInfo:=fBoard.GridInfo;
-  if CanWin or CanBlock or CanFork or CanBlockFork or
-     CanGoInCentre or CanGoInOppositeCorner or CanGoInEmptyCorner or CanGoInEmptySide
-  then exit;
+  fComputerPlayer := aPlayer;
+  fBoard := aBoard;
+  if CanWin or 
+     CanBlock or 
+     CanFork or 
+     CanBlockFork or
+     CanGoInCentre or 
+     CanGoInOppositeCorner or 
+     CanGoInEmptyCorner or 
+     CanGoInEmptySide then exit;
+
+
+{Thread 0 Crashed:: Dispatch queue: com.apple.main-thread
+0   libobjc.A.dylib               	0x00074d8b objc_retain + 27
+1   libobjc.A.dylib               	0x00075ff3 objc_retainAutorelease + 17
+2   TicTacToe                     	0x0000d1d2 -[ComputerPlayer makeBestMove::] + 178
+3   TicTacToe                     	0x0000512f -[Board makeComputerMove:] + 271
+4   TicTacToe                     	0x00013c16 RootViewController <computerTurn>b__1$0 + 134
+}
 end;
 
-method ComputerPlayer.SetGridInfo(x: Int32; y: Int32; aplayer: String);
+method ComputerPlayer.SetGridInfo(x: Int32; y: Int32; aPlayer: String);
 begin
-  fGridInfo[x,y]:=aplayer;
+  fBoard.markGrid(x, y, aPlayer);
 end;
 
 end.
