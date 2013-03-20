@@ -111,8 +111,6 @@ begin
   fBoard := new Board withFrame(view.frame);
   fBoard.delegate := self;
   view.addSubview(fBoard);
-
-  updateGameCenterButton();
 end;
 
 method RootViewController.updateGameCenterButton;
@@ -150,10 +148,10 @@ begin
           navigationController.navigationBar.topItem.rightBarButtonItem.title := 'Start';
         end;
 
-        if not assigned(fCurrentMatch) and not fInitialLaunchComplete then
+        if not assigned(fCurrentMatch) and not fInitialLaunchComplete then begin
           newComputerGame(nil);
- 
-        fInitialLaunchComplete := true;
+          fInitialLaunchComplete := true;
+        end;
 
       end);
 
@@ -162,7 +160,12 @@ begin
     NSLog('player is NOT authenticated with Game Center');
     if assigned(navigationController.navigationBar.topItem.rightBarButtonItem) then
       navigationController.navigationBar.topItem.rightBarButtonItem := nil;
-    newComputerGame(nil); 
+    
+    if not assigned(fCurrentMatch) and not fInitialLaunchComplete then begin
+      newComputerGame(nil);
+      fInitialLaunchComplete := true;
+    end;
+
   end;
 end;
 
@@ -195,7 +198,7 @@ begin
                  if lComputerStartsNext then
                    computerTurn()
                  else
-                   yourTurm();
+                   yourTurn();
 
                  NSUserDefaults.standardUserDefaults.setBool(not lComputerStartsNext) forKey(KEY_COMPUTER_STARTS_NEXT); 
                  NSUserDefaults.standardUserDefaults.setObject(nil) forKey(KEY_CURRENT_MATCH_ID); 
