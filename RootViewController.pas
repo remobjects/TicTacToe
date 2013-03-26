@@ -29,6 +29,7 @@ type
     method setParticipantsTurnStatus(aParticipant: GKTurnBasedParticipant);
 
     method updateGameCenterButton;
+    method alertError(aMessage: NSString);
 
     [IBAction] method newGame(aSender: id);
     [IBAction] method newComputerGame(aSender: id);
@@ -268,6 +269,7 @@ begin
            matchData(aMatch.matchData) 
            completionHandler(method (aError: NSError) begin
         NSLog('participantQuitInTurnWithOutcome completion - Error:%@', aError);
+        alertError(aError.localizedDescription);
       end); 
   end
   else begin
@@ -288,6 +290,10 @@ end;
 method RootViewController.handleTurnEventForMatch(aMatch: GKTurnBasedMatch) didBecomeActive(didBecomeActive: Boolean);
 begin
   NSLog('handleTurnEventForMatch:%@ didBecomeActive:%d (current match is %@)', aMatch, didBecomeActive, fCurrentMatch);
+
+  // do not switch to a different game, if app was already active
+  if (not didBecomeActive) and (fCurrentMatch:matchID ≠ aMatch:matchID) then exit; 
+
   fBoard.clear(method begin
                  fCurrentMatch := aMatch;
                  loadCurrentMatch();
@@ -397,10 +403,10 @@ begin
               withCompletionHandler(method(aPlayers: NSArray; aError: NSError) begin
                   NSLog('loadPlayersForIdentifiers:completion: completion(%@, %@)', aPlayers, aError);
                   if aPlayers.count > 0 then
-                    //dispatch_async(@_dispatch_main_q, -> fBoard.setStatus(aPlayers[0].alias+"'s turn"))
+                    //dispatch_async(dispatch_get_main_queue(), -> fBoard.setStatus(aPlayers[0].alias+"'s turn"))
                     fBoard.setStatus(aPlayers[0].alias+"'s turn")
                   else
-                    //dispatch_async(@_dispatch_main_q, -> fBoard.setStatus(aParticipant.playerID+"'s turn"))
+                    //dispatch_async(dispatch_get_main_queue(), -> fBoard.setStatus(aParticipant.playerID+"'s turn"))
                     fBoard.setStatus(aParticipant.playerID+"'s turn")
                 end);
   end
@@ -461,7 +467,7 @@ begin
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), method begin
           
       NSThread.sleepForTimeInterval(0.75);
-      dispatch_async(@_dispatch_main_q, method begin
+      dispatch_async(dispatch_get_main_queue(), method begin
           fBoard.makeComputerMove('O');
               
           nextLocalTurn(method begin
@@ -523,5 +529,11 @@ begin
 
   end;
 end;
+
+method RootViewController.alertError(aMessage: NSString);
+begin
+  var lAlert := new UIAlertView withTitle('Error') message(aMessage) &delegate(nil) cancelButtonTitle('OK') otherButtonTitles(nil); 
+end;
+
 
 end.
