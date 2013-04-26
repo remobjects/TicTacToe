@@ -265,7 +265,8 @@ begin
 
   if aMatch.currentParticipant.playerID = GKLocalPlayer.localPlayer.playerID then begin
     aMatch.participantQuitInTurnWithOutcome(GKTurnBasedMatchOutcome.GKTurnBasedMatchOutcomeQuit) 
-           nextParticipant(nextParticipantForMatch(aMatch)) 
+           nextParticipant(nextParticipantForMatch(aMatch))
+           //turnTimeout(0)
            matchData(aMatch.matchData) 
            completionHandler(method (aError: NSError) begin
         NSLog('participantQuitInTurnWithOutcome completion - Error:%@', aError);
@@ -452,6 +453,7 @@ begin
 
   setParticipantsTurnStatus(remoteParticipantForMatch(fCurrentMatch));
   fCurrentMatch.endTurnWithNextParticipant(remoteParticipantForMatch(fCurrentMatch)) 
+                //turnTimeout(0)
                 matchData(getMatchDataFromBoard)
                 completionHandler(method (aError: NSError) begin
                     NSLog('endTurnWithNextParticipant completion');
@@ -533,6 +535,7 @@ end;
 method RootViewController.alertError(aMessage: NSString);
 begin
   var lAlert := new UIAlertView withTitle('Error') message(aMessage) &delegate(nil) cancelButtonTitle('OK') otherButtonTitles(nil); 
+  lAlert.show();
 end;
 
 

@@ -48,6 +48,7 @@
     <ProvisioningProfileName>TicTacToe App Store</ProvisioningProfileName>
     <CodesignCertificateName>iPhone Distribution: RemObjects Software</CodesignCertificateName>
     <CreateIPA>True</CreateIPA>
+    <Architecture>armv7;armv7s</Architecture>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CoreGraphics.fx" />
@@ -55,6 +56,7 @@
     <Reference Include="GameKit.fx">
       <HintPath>C:\Program Files (x86)\RemObjects Software\Oxygene\Nougat\SDKs\iOS 6.1\GameKit.fx</HintPath>
     </Reference>
+    <Reference Include="libNougat.fx" />
     <Reference Include="UIKit.fx" />
     <Reference Include="rtl.fx" />
   </ItemGroup>

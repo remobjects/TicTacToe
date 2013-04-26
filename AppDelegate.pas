@@ -34,7 +34,7 @@ begin
   window.rootViewController := n;
   
   window.makeKeyAndVisible;
-  
+
   result := true;
 end;
 
