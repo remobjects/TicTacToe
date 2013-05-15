@@ -32,9 +32,6 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
-    <ProvisioningProfile>66FE4BE0-6416-4E3A-90FF-BC3A8D149D95</ProvisioningProfile>
-    <ProvisioningProfileName>iOS Team Provisioning Profile: Wildcard AppID</ProvisioningProfileName>
-    <CodesignCertificateName>iPhone Developer: marc hoffman (K2YTD84U6W)</CodesignCertificateName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <Optimize>true</Optimize>
@@ -44,18 +41,13 @@
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <CaptureConsoleOutput>False</CaptureConsoleOutput>
     <WarnOnCaseMismatch>True</WarnOnCaseMismatch>
-    <ProvisioningProfile>DCC6DC43-80C6-4F9A-8EA0-98629AF70DB5</ProvisioningProfile>
-    <ProvisioningProfileName>TicTacToe App Store</ProvisioningProfileName>
-    <CodesignCertificateName>iPhone Distribution: RemObjects Software</CodesignCertificateName>
     <CreateIPA>True</CreateIPA>
     <Architecture>armv7;armv7s</Architecture>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CoreGraphics.fx" />
     <Reference Include="Foundation.fx" />
-    <Reference Include="GameKit.fx">
-      <HintPath>C:\Program Files (x86)\RemObjects Software\Oxygene\Nougat\SDKs\iOS 6.1\GameKit.fx</HintPath>
-    </Reference>
+    <Reference Include="GameKit.fx" />
     <Reference Include="libNougat.fx" />
     <Reference Include="UIKit.fx" />
     <Reference Include="rtl.fx" />
